@@ -19,10 +19,12 @@
  */
 package org.datacleaner.spark;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.metamodel.csv.CsvConfiguration;
+import org.apache.metamodel.util.FileResource;
 import org.apache.metamodel.util.Resource;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -31,6 +33,8 @@ import org.datacleaner.api.AnalyzerResult;
 import org.datacleaner.api.InputRow;
 import org.datacleaner.connection.CsvDatastore;
 import org.datacleaner.connection.Datastore;
+import org.datacleaner.connection.FixedWidthConfiguration;
+import org.datacleaner.connection.FixedWidthDatastore;
 import org.datacleaner.connection.JsonDatastore;
 import org.datacleaner.job.AnalysisJob;
 import org.datacleaner.job.runner.AnalysisResultFuture;
@@ -38,6 +42,7 @@ import org.datacleaner.job.runner.AnalysisRunner;
 import org.datacleaner.spark.functions.AnalyzerResultReduceFunction;
 import org.datacleaner.spark.functions.CsvParserFunction;
 import org.datacleaner.spark.functions.ExtractAnalyzerResultFunction;
+import org.datacleaner.spark.functions.FixedWidthParserFunction;
 import org.datacleaner.spark.functions.JsonParserFunction;
 import org.datacleaner.spark.functions.RowProcessingFunction;
 import org.datacleaner.spark.functions.TuplesToTuplesFunction;
@@ -187,6 +192,31 @@ public class SparkAnalysisRunner implements AnalysisRunner {
             final JavaPairRDD<Object[], Long> zipWithIndex = parsedInput.zipWithIndex();
             final JavaRDD<InputRow> inputRowsRDD = zipWithIndex.map(new ValuesToInputRowFunction(_sparkJobContext));
             return inputRowsRDD;
+        } else if (datastore instanceof FixedWidthDatastore){
+            
+            final FixedWidthDatastore fixedWidthDatastore = (FixedWidthDatastore) datastore; 
+            
+            final String filename = fixedWidthDatastore.getFilename();
+            final Resource file = new FileResource(filename);
+            final String datastorePath = file.getQualifiedPath();
+            final org.apache.metamodel.fixedwidth.FixedWidthConfiguration fixedWidthConfiguration = fixedWidthDatastore.getFixedWidthConfiguration();
+            final JavaRDD<String> rawInput;
+            if (_minPartitions != null) {
+                rawInput = _sparkContext.textFile(datastorePath, _minPartitions);
+            } else {
+                rawInput = _sparkContext.textFile(datastorePath);
+            }
+            
+            final JavaRDD<Object[]> parsedInput = rawInput.map(new FixedWidthParserFunction(fixedWidthConfiguration));
+
+            JavaPairRDD<Object[], Long> zipWithIndex = parsedInput.zipWithIndex();
+
+            if (fixedWidthConfiguration.getColumnNameLineNumber() != org.apache.metamodel.fixedwidth.FixedWidthConfiguration.NO_COLUMN_NAME_LINE) {
+                zipWithIndex = zipWithIndex.filter(new SkipHeaderLineFunction(fixedWidthConfiguration
+                        .getColumnNameLineNumber()));
+            }
+
+            final JavaRDD<InputRow> inputRowsRDD = zipWithIndex.map(new ValuesToInputRowFunction(_sparkJobContext));
         }
 
         throw new UnsupportedOperationException("Unsupported datastore type or configuration: " + datastore);

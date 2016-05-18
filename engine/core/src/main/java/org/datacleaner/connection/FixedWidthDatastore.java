@@ -29,6 +29,7 @@ import org.datacleaner.util.ReadObjectBuilder;
 import org.apache.metamodel.DataContext;
 import org.apache.metamodel.DataContextFactory;
 import org.apache.metamodel.fixedwidth.FixedWidthConfiguration;
+import org.apache.metamodel.util.FileHelper;
 
 /**
  * Datastore based on fixed width files
@@ -99,13 +100,7 @@ public class FixedWidthDatastore extends UsageAwareDatastore<DataContext> implem
 		final File file = new File(_filename);
 		assert file.exists();
 
-		final FixedWidthConfiguration configuration;
-		if (_fixedValueWidth == -1) {
-			configuration = new FixedWidthConfiguration(_headerLineNumber, _encoding, _valueWidths, _failOnInconsistencies);
-		} else {
-			configuration = new FixedWidthConfiguration(_headerLineNumber, _encoding, _fixedValueWidth,
-					_failOnInconsistencies);
-		}
+	    final FixedWidthConfiguration configuration = getFixedWidthConfiguration();
 
 		DataContext dataContext = DataContextFactory.createFixedWidthDataContext(file, configuration);
 		return new DatastoreConnectionImpl<DataContext>(dataContext, this);
@@ -145,6 +140,20 @@ public class FixedWidthDatastore extends UsageAwareDatastore<DataContext> implem
 		identifiers.add(_valueWidths);
 		identifiers.add(_headerLineNumber);
 		identifiers.add(_failOnInconsistencies);
+	}
+	
+	public FixedWidthConfiguration getFixedWidthConfiguration(){
+	    
+	    final FixedWidthConfiguration configuration;
+        if (_fixedValueWidth == -1) {
+            configuration = new FixedWidthConfiguration(_headerLineNumber, _encoding, _valueWidths, _failOnInconsistencies);
+        } else {
+            configuration = new FixedWidthConfiguration(_headerLineNumber, _encoding, _fixedValueWidth,
+                    _failOnInconsistencies);
+        }
+        
+        return configuration; 
+	  
 	}
 
 	@Override
