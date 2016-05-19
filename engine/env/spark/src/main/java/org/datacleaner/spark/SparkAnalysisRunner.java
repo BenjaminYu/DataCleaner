@@ -19,7 +19,6 @@
  */
 package org.datacleaner.spark;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +32,6 @@ import org.datacleaner.api.AnalyzerResult;
 import org.datacleaner.api.InputRow;
 import org.datacleaner.connection.CsvDatastore;
 import org.datacleaner.connection.Datastore;
-import org.datacleaner.connection.FixedWidthConfiguration;
 import org.datacleaner.connection.FixedWidthDatastore;
 import org.datacleaner.connection.JsonDatastore;
 import org.datacleaner.job.AnalysisJob;
@@ -196,9 +194,8 @@ public class SparkAnalysisRunner implements AnalysisRunner {
             
             final FixedWidthDatastore fixedWidthDatastore = (FixedWidthDatastore) datastore; 
             
-            final String filename = fixedWidthDatastore.getFilename();
-            final Resource file = new FileResource(filename);
-            final String datastorePath = file.getQualifiedPath();
+            final Resource resource = fixedWidthDatastore.getResource();
+            final String datastorePath = resource.getQualifiedPath();
             final org.apache.metamodel.fixedwidth.FixedWidthConfiguration fixedWidthConfiguration = fixedWidthDatastore.getFixedWidthConfiguration();
             final JavaRDD<String> rawInput;
             if (_minPartitions != null) {
@@ -217,6 +214,7 @@ public class SparkAnalysisRunner implements AnalysisRunner {
             }
 
             final JavaRDD<InputRow> inputRowsRDD = zipWithIndex.map(new ValuesToInputRowFunction(_sparkJobContext));
+            return inputRowsRDD;
         }
 
         throw new UnsupportedOperationException("Unsupported datastore type or configuration: " + datastore);
