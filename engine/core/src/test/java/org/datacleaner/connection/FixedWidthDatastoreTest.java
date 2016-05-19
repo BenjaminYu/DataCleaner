@@ -23,15 +23,16 @@ import java.util.Arrays;
 
 import org.apache.metamodel.schema.Schema;
 import org.apache.metamodel.schema.Table;
+import org.apache.metamodel.util.FileResource;
 
 import junit.framework.TestCase;
 
 public class FixedWidthDatastoreTest extends TestCase {
 
     public void testSimpleGetters() throws Exception {
-        FixedWidthDatastore ds = new FixedWidthDatastore("name", "filename", "encoding", 5);
+        FixedWidthDatastore ds = new FixedWidthDatastore("name", new FileResource("filename"), "encoding", 5);
         assertEquals("name", ds.getName());
-        assertEquals("filename", ds.getFilename());
+        assertEquals("filename", ds.getResource().getName());
         assertEquals("encoding", ds.getEncoding());
         assertEquals(5, ds.getFixedValueWidth());
 
@@ -39,15 +40,15 @@ public class FixedWidthDatastoreTest extends TestCase {
     }
 
     public void testToString() throws Exception {
-        FixedWidthDatastore ds = new FixedWidthDatastore("name", "filename", "encoding", 5);
+        FixedWidthDatastore ds = new FixedWidthDatastore("name",  new FileResource("filename"), "encoding", 5);
         assertEquals(
-                "FixedWidthDatastore[name=name, filename=filename, encoding=encoding, headerLineNumber=1, valueWidths=[], fixedValueWidth=5]",
+                "FixedWidthDatastore[name=name, resource=C:\\Users\\claudiap\\git\\DataCleaner\\engine\\core\\filename, encoding=encoding, headerLineNumber=1, valueWidths=[], fixedValueWidth=5]",
                 ds.toString());
     }
 
     public void testGetDatastoreConnection() throws Exception {
         FixedWidthDatastore ds = new FixedWidthDatastore("example datastore",
-                "src/test/resources/employees-fixed-width.txt", "UTF-8", 19, false);
+                new FileResource("src/test/resources/employees-fixed-width.txt"), "UTF-8", 19, false);
 
         try (DatastoreConnection con = ds.openConnection()) {
             Schema schema = con.getDataContext().getDefaultSchema();

@@ -749,7 +749,7 @@ public final class JaxbConfigurationReader implements ConfigurationReader<InputS
             } else if (datastoreType instanceof JdbcDatastoreType) {
                 ds = createDatastore(name, (JdbcDatastoreType) datastoreType);
             } else if (datastoreType instanceof FixedWidthDatastoreType) {
-                ds = createDatastore(name, (FixedWidthDatastoreType) datastoreType);
+                ds = createDatastore(name, (FixedWidthDatastoreType) datastoreType, temporaryConfiguration);
             } else if (datastoreType instanceof SasDatastoreType) {
                 ds = createDatastore(name, (SasDatastoreType) datastoreType);
             } else if (datastoreType instanceof AccessDatastoreType) {
@@ -1233,10 +1233,11 @@ public final class JaxbConfigurationReader implements ConfigurationReader<InputS
         return ds;
     }
 
-    private Datastore createDatastore(String name, FixedWidthDatastoreType fixedWidthDatastore) {
+    private Datastore createDatastore(String name, FixedWidthDatastoreType fixedWidthDatastore, DataCleanerConfiguration configuration) {
         @SuppressWarnings("deprecation")
         final String filename = _interceptor.createFilename(getStringVariable("filename", fixedWidthDatastore
                 .getFilename()));
+        final Resource resource = _interceptor.createResource(filename, configuration);
         String encoding = getStringVariable("encoding", fixedWidthDatastore.getEncoding());
         if (!StringUtils.isNullOrEmpty(encoding)) {
             encoding = FileHelper.UTF_8_ENCODING;
@@ -1260,10 +1261,10 @@ public final class JaxbConfigurationReader implements ConfigurationReader<InputS
             for (int i = 0; i < valueWidths.length; i++) {
                 valueWidths[i] = valueWidthsBoxed.get(i).intValue();
             }
-            ds = new FixedWidthDatastore(name, filename, encoding, valueWidths, failOnInconsistencies, headerLineNumber
+            ds = new FixedWidthDatastore(name, resource, encoding, valueWidths, failOnInconsistencies, headerLineNumber
                     .intValue());
         } else {
-            ds = new FixedWidthDatastore(name, filename, encoding, fixedValueWidth, failOnInconsistencies,
+            ds = new FixedWidthDatastore(name, resource, encoding, fixedValueWidth, failOnInconsistencies,
                     headerLineNumber.intValue());
         }
         return ds;
