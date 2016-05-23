@@ -1261,10 +1261,10 @@ public final class JaxbConfigurationReader implements ConfigurationReader<InputS
             for (int i = 0; i < valueWidths.length; i++) {
                 valueWidths[i] = valueWidthsBoxed.get(i).intValue();
             }
-            ds = new FixedWidthDatastore(name, resource, encoding, valueWidths, failOnInconsistencies, headerLineNumber
+            ds = new FixedWidthDatastore(name, resource, filename,encoding, valueWidths, failOnInconsistencies, headerLineNumber
                     .intValue());
         } else {
-            ds = new FixedWidthDatastore(name, resource, encoding, fixedValueWidth, failOnInconsistencies,
+            ds = new FixedWidthDatastore(name, resource, filename, encoding, fixedValueWidth, failOnInconsistencies,
                     headerLineNumber.intValue());
         }
         return ds;

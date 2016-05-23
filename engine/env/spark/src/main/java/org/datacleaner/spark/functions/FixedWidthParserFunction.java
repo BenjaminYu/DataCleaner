@@ -26,19 +26,18 @@ import org.apache.spark.api.java.function.Function;
 public class FixedWidthParserFunction implements Function<String, Object[]> {
 
     private static final long serialVersionUID = 1L;
-
     private final FixedWidthConfiguration _fixedWidthConfiguration;
-    private final FixedWidthReader _fixedWidthReader;
 
     public FixedWidthParserFunction(FixedWidthConfiguration fixedWidthConfiguration) {
         _fixedWidthConfiguration = fixedWidthConfiguration;
-        _fixedWidthReader = new FixedWidthReader(null, _fixedWidthConfiguration.getValueWidths(),
-                _fixedWidthConfiguration.isFailOnInconsistentLineWidth());
     }
 
     @Override
     public Object[] call(String line) throws Exception {
-        return _fixedWidthReader.readLine(line);
+        @SuppressWarnings("resource")
+        final FixedWidthReader fixedWidthReader = new FixedWidthReader(null, _fixedWidthConfiguration
+                .getValueWidths(), _fixedWidthConfiguration.isFailOnInconsistentLineWidth()); 
+            return fixedWidthReader.readLine(line);
     }
 
 }

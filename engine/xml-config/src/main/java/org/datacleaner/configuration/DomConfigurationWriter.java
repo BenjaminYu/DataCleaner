@@ -36,6 +36,7 @@ import org.datacleaner.connection.Datastore;
 import org.datacleaner.connection.DatastoreCatalog;
 import org.datacleaner.connection.ElasticSearchDatastore;
 import org.datacleaner.connection.ExcelDatastore;
+import org.datacleaner.connection.FixedWidthDatastore;
 import org.datacleaner.connection.JdbcDatastore;
 import org.datacleaner.connection.MongoDbDatastore;
 import org.datacleaner.connection.SalesforceDatastore;
@@ -170,6 +171,11 @@ public class DomConfigurationWriter {
         if (datastore instanceof DataHubDatastore) {
             return true;
         }
+        
+        if (datastore instanceof FixedWidthDatastore){
+            return true; 
+        }
+        
 
         return false;
     }
@@ -331,6 +337,10 @@ public class DomConfigurationWriter {
             elem = toElement((SalesforceDatastore) datastore);
         } else if (datastore instanceof DataHubDatastore) {
             elem = toElement((DataHubDatastore) datastore);
+        } else if (datastore instanceof FixedWidthDatastore){
+            final Resource resource = ((FixedWidthDatastore) datastore).getResource();
+            final String filename = toFilename(resource);
+            elem = toElement((FixedWidthDatastore) datastore, filename); 
         } else {
             throw new UnsupportedOperationException("Non-supported datastore: " + datastore);
         }
@@ -709,6 +719,33 @@ public class DomConfigurationWriter {
         appendElement(ds, "username", datastore.getUsername());
         appendElement(ds, "password", encodePassword(datastore.getPassword()));
         appendElement(ds, "ssl", datastore.isSslEnabled());
+
+        return ds;
+    }
+    
+    public Element toElement(FixedWidthDatastore datastore, String filename){
+        final Element ds = getDocument().createElement("fixed-width-datastore");
+        ds.setAttribute("name", datastore.getName());
+        if (!Strings.isNullOrEmpty(datastore.getDescription())) {
+            ds.setAttribute("description", datastore.getDescription());
+        }
+        appendElement(ds, "filename", filename);
+        appendElement(ds, "encoding", datastore.getEncoding());
+
+        final Element widthElement = getDocument().createElement("width-specification");
+        final int fixedValueWidth = datastore.getFixedValueWidth();
+        if (fixedValueWidth > -1) {
+            final String valueOf = String.valueOf(fixedValueWidth);
+            appendElement(widthElement, "fixed-value-width", valueOf);
+        } else {
+            final int[] valueWidths = datastore.getValueWidths();
+            for (int i=0; i<valueWidths.length; i++) {
+                appendElement(widthElement, "value-width", String.valueOf(valueWidths[i]));
+            }
+        }
+        ds.appendChild(widthElement);
+        appendElement(ds, "header-line-number", datastore.getHeaderLineNumber());
+        appendElement(ds, "fail-on-inconsistencies", String.valueOf(datastore.isFailOnInconsistencies()));
 
         return ds;
     }
