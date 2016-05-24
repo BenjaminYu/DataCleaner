@@ -22,6 +22,9 @@ package org.datacleaner.connection;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectInputStream.GetField;
+import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,6 +35,7 @@ import org.apache.metamodel.util.FileResource;
 import org.apache.metamodel.util.Resource;
 import org.apache.metamodel.util.SerializableRef;
 import org.datacleaner.util.ReadObjectBuilder;
+import org.datacleaner.util.ReadObjectBuilder.Adaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +104,18 @@ public class FixedWidthDatastore extends UsageAwareDatastore<DataContext> implem
     }
 
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        ReadObjectBuilder.create(this, FixedWidthDatastore.class).readObject(stream);
+        final Adaptor adaptor = new Adaptor() {
+            @Override
+            public void deserialize(GetField getField, Serializable serializable) throws Exception {
+                final String filename = (String) getField.get("_filename", "");
+                final Field field = FixedWidthDatastore.class.getDeclaredField("_resourceRef");
+                field.setAccessible(true);
+                final FileResource fileResource = new FileResource(filename);
+                final SerializableRef<Resource> resourceRef = new SerializableRef<Resource>(fileResource);
+                field.set(serializable, resourceRef);
+            }
+        };
+        ReadObjectBuilder.create(this, FixedWidthDatastore.class).readObject(stream, adaptor);
     }
 
     @Override
