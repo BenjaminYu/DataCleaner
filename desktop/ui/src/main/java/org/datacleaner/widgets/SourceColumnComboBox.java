@@ -52,6 +52,35 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
     private final SchemaStructureComboBoxListRenderer _renderer;
     private volatile DatastoreConnection _datastoreConnection;
     private volatile Table _table;
+    private final ModelLoadingProgress _modelLoadingProgress = new ModelLoadingProgress();
+
+    private class ModelLoadingProgress {
+        private int _currentSchema;
+        private int _schemaCount;
+        private int _tableCount;
+        private ProgressBar _progressBar;
+
+        private ModelLoadingProgress() {
+        }
+
+        public void start(int schemaCount) {
+            _schemaCount = schemaCount;
+            _currentSchema = 0;
+            _progressBar = new ProgressBar();
+            _progressBar.show();
+        }
+
+        public void newSchema(int tableCount) {
+            _currentSchema++;
+            _tableCount = tableCount;
+            _progressBar.update(String.format("Loading schema %d/%d with %d tables...", _currentSchema, _schemaCount,
+                    _tableCount));
+        }
+
+        public void stop() {
+            _progressBar.hide();
+        }
+    }
 
     public SourceColumnComboBox() {
         super();
@@ -94,11 +123,11 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
             setDatastoreConnection(datastore.openConnection());
         }
         if (table == null) {
-            setModel(new DefaultComboBoxModel<Object>(new String[1]));
+            setModel(new DefaultComboBoxModel<>(new String[1]));
         } else {
             int selectedIndex = 0;
 
-            List<Column> comboBoxList = new ArrayList<Column>();
+            List<Column> comboBoxList = new ArrayList<>();
             comboBoxList.add(null);
 
             Column[] columns = table.getColumns();
@@ -108,7 +137,7 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
                     selectedIndex = comboBoxList.size() - 1;
                 }
             }
-            final ComboBoxModel<Object> model = new DefaultComboBoxModel<Object>(comboBoxList.toArray());
+            final ComboBoxModel<Object> model = new DefaultComboBoxModel<>(comboBoxList.toArray());
             setModel(model);
             setSelectedIndex(selectedIndex);
         }
@@ -123,55 +152,65 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
     }
 
     public void setModel(Datastore datastore, boolean retainSelection) {
-        final Column previousItem = getSelectedItem();
-
         setTable(null);
 
         if (datastore == null) {
             setDatastoreConnection(null);
-            setModel(new DefaultComboBoxModel<Object>(new String[1]));
+            setModel(new DefaultComboBoxModel<>(new String[1]));
         } else {
+            new Thread(() -> {
+                setModelFromSchemas(datastore, retainSelection);
+            }).start();
+        }
+    }
 
-            DatastoreConnection con = setDatastoreConnection(datastore.openConnection());
+    private void setModelFromSchemas(Datastore datastore, boolean retainSelection) {
+        DatastoreConnection con = setDatastoreConnection(datastore.openConnection());
 
-            int selectedIndex = 0;
+        List<Object> comboBoxList = new ArrayList<>();
+        comboBoxList.add(null);
 
-            List<Object> comboBoxList = new ArrayList<Object>();
-            comboBoxList.add(null);
+        Schema[] schemas = con.getSchemaNavigator().getSchemas();
+        Arrays.sort(schemas, new SchemaComparator());
+        _modelLoadingProgress.start(schemas.length);
 
-            Schema[] schemas = con.getSchemaNavigator().getSchemas();
-            Arrays.sort(schemas, new SchemaComparator());
+        for (Schema schema : schemas) {
+            _modelLoadingProgress.newSchema(schema.getTableCount());
+            comboBoxList.add(schema);
 
-            for (Schema schema : schemas) {
-                comboBoxList.add(schema);
-                if (!MetaModelHelper.isInformationSchema(schema)) {
-                    Table[] tables = schema.getTables();
-                    for (Table table : tables) {
-                        try {
-                            Column[] columns = table.getColumns();
-                            if (columns != null && columns.length > 0) {
-                                comboBoxList.add(table);
-                                for (Column column : columns) {
-                                    comboBoxList.add(column);
-                                    if (column == previousItem) {
-                                        selectedIndex = comboBoxList.size() - 1;
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            // errors can occur for experimental datastores (or
-                            // something like SAS datastores where not all SAS
-                            // files are supported). Ignore.
-                            logger.error("Error occurred getting columns of table: {}", table);
+            if (!MetaModelHelper.isInformationSchema(schema)) {
+                processSchema(schema.getTables(), comboBoxList, retainSelection);
+            }
+        }
+
+        final ComboBoxModel<Object> model = new DefaultComboBoxModel<>(comboBoxList.toArray());
+        setModel(model);
+        _modelLoadingProgress.stop();
+    }
+
+    private void processSchema(Table[] tables, List<Object> comboBoxList, boolean retainSelection) {
+        final Column previousItem = getSelectedItem();
+
+        for (Table table : tables) {
+            try {
+                Column[] columns = table.getColumns();
+
+                if (columns != null && columns.length > 0) {
+                    comboBoxList.add(table);
+
+                    for (Column column : columns) {
+                        comboBoxList.add(column);
+
+                        if (column == previousItem && retainSelection) {
+                            setSelectedIndex(comboBoxList.size() - 1);
                         }
                     }
                 }
-            }
-
-            final ComboBoxModel<Object> model = new DefaultComboBoxModel<Object>(comboBoxList.toArray());
-            setModel(model);
-            if (retainSelection) {
-                setSelectedIndex(selectedIndex);
+            } catch (Exception e) {
+                // errors can occur for experimental datastores (or
+                // something like SAS datastores where not all SAS
+                // files are supported). Ignore.
+                logger.error("Error occurred getting columns of table: {}", table);
             }
         }
     }
@@ -203,12 +242,9 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
     }
 
     public void addColumnSelectedListener(final DCComboBox.Listener<Column> listener) {
-        super.addListener(new DCComboBox.Listener<Object>() {
-            @Override
-            public void onItemSelected(Object item) {
-                if (item instanceof Column) {
-                    listener.onItemSelected((Column) item);
-                }
+        super.addListener(item -> {
+            if (item instanceof Column) {
+                listener.onItemSelected((Column) item);
             }
         });
     }
