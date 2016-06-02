@@ -20,21 +20,16 @@
 package org.datacleaner.widgets;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 
-import org.apache.metamodel.MetaModelHelper;
 import org.apache.metamodel.schema.Column;
-import org.apache.metamodel.schema.Schema;
 import org.apache.metamodel.schema.Table;
 import org.datacleaner.connection.Datastore;
 import org.datacleaner.connection.DatastoreConnection;
-import org.datacleaner.util.SchemaComparator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.datacleaner.connection.DatastoreConnectionLease;
 
 /**
  * A combobox that makes it easy to display and select source coumns from a
@@ -47,40 +42,11 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
 
     private static final long serialVersionUID = 1L;
 
-    private static final Logger logger = LoggerFactory.getLogger(SourceColumnComboBox.class);
-
     private final SchemaStructureComboBoxListRenderer _renderer;
     private volatile DatastoreConnection _datastoreConnection;
     private volatile Table _table;
-    private final ModelLoadingProgress _modelLoadingProgress = new ModelLoadingProgress();
-
-    private class ModelLoadingProgress {
-        private int _currentSchema;
-        private int _schemaCount;
-        private int _tableCount;
-        private ProgressBar _progressBar;
-
-        private ModelLoadingProgress() {
-        }
-
-        public void start(int schemaCount) {
-            _schemaCount = schemaCount;
-            _currentSchema = 0;
-            _progressBar = new ProgressBar();
-            _progressBar.show();
-        }
-
-        public void newSchema(int tableCount) {
-            _currentSchema++;
-            _tableCount = tableCount;
-            _progressBar.update(String.format("Loading schema %d/%d with %d tables...", _currentSchema, _schemaCount,
-                    _tableCount));
-        }
-
-        public void stop() {
-            _progressBar.hide();
-        }
-    }
+    private boolean _isLoading = false;
+    private SourceColumnComboBoxModelLoader _modelLoader = null;
 
     public SourceColumnComboBox() {
         super();
@@ -158,61 +124,28 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
             setDatastoreConnection(null);
             setModel(new DefaultComboBoxModel<>(new String[1]));
         } else {
-            new Thread(() -> {
-                setModelFromSchemas(datastore, retainSelection);
-            }).start();
-        }
-    }
-
-    private void setModelFromSchemas(Datastore datastore, boolean retainSelection) {
-        DatastoreConnection con = setDatastoreConnection(datastore.openConnection());
-
-        List<Object> comboBoxList = new ArrayList<>();
-        comboBoxList.add(null);
-
-        Schema[] schemas = con.getSchemaNavigator().getSchemas();
-        Arrays.sort(schemas, new SchemaComparator());
-        _modelLoadingProgress.start(schemas.length);
-
-        for (Schema schema : schemas) {
-            _modelLoadingProgress.newSchema(schema.getTableCount());
-            comboBoxList.add(schema);
-
-            if (!MetaModelHelper.isInformationSchema(schema)) {
-                processSchema(schema.getTables(), comboBoxList, retainSelection);
-            }
-        }
-
-        final ComboBoxModel<Object> model = new DefaultComboBoxModel<>(comboBoxList.toArray());
-        setModel(model);
-        _modelLoadingProgress.stop();
-    }
-
-    private void processSchema(Table[] tables, List<Object> comboBoxList, boolean retainSelection) {
-        final Column previousItem = getSelectedItem();
-
-        for (Table table : tables) {
             try {
-                Column[] columns = table.getColumns();
-
-                if (columns != null && columns.length > 0) {
-                    comboBoxList.add(table);
-
-                    for (Column column : columns) {
-                        comboBoxList.add(column);
-
-                        if (column == previousItem && retainSelection) {
-                            setSelectedIndex(comboBoxList.size() - 1);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // errors can occur for experimental datastores (or
-                // something like SAS datastores where not all SAS
-                // files are supported). Ignore.
-                logger.error("Error occurred getting columns of table: {}", table);
+                _isLoading = true;
+                final DatastoreConnection datastoreConnection = setDatastoreConnection(datastore.openConnection());
+                _modelLoader = new SourceColumnComboBoxModelLoader(this, datastoreConnection, retainSelection);
+                _modelLoader.start();
+                _modelLoader.join(); // do not let other combo boxes to start loading (multiple progress bars on screen)
+                // TODO: isn't the same loaded model used for all combo boxes? => do not create multiple ModelLoaders
+            } catch (InterruptedException e) {
+                // ignored
+            } finally {
+                _isLoading = false;
             }
         }
+    }
+
+    public boolean isLoading() {
+        return _isLoading;
+    }
+
+    public void stopLoading() {
+        _modelLoader.interrupt();
+        _isLoading = false;
     }
 
     @Override
@@ -273,7 +206,13 @@ public class SourceColumnComboBox extends DCComboBox<Object> {
         super.removeNotify();
         if (_datastoreConnection != null) {
             // close the data context provider when the widget is removed
-            _datastoreConnection.close();
+            if (_datastoreConnection instanceof DatastoreConnectionLease) {
+                if (!((DatastoreConnectionLease)_datastoreConnection).isClosed()) {
+                    _datastoreConnection.close();
+                }
+            } else {
+                _datastoreConnection.close();
+            }
         }
     }
 }

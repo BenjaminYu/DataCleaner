@@ -1,30 +1,63 @@
+/**
+ * DataCleaner (community edition)
+ * Copyright (C) 2014 Neopost - Customer Information Management
+ *
+ * This copyrighted material is made available to anyone wishing to use, modify,
+ * copy, or redistribute it subject to the terms and conditions of the GNU
+ * Lesser General Public License, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this distribution; if not, write to:
+ * Free Software Foundation, Inc.
+ * 51 Franklin Street, Fifth Floor
+ * Boston, MA  02110-1301  USA
+ */
 package org.datacleaner.widgets;
 
+import java.awt.Toolkit;
+import java.awt.event.WindowEvent;
 import java.net.URL;
 
 import javax.swing.ImageIcon;
-import javax.swing.JFrame;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.WindowConstants;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ProgressBar {
-    private static final Logger logger = LoggerFactory.getLogger(ProgressBar.class);
-    private ProgressBarFrame _frame;
+    private ProgressBarDialog _dialog;
     private Thread _thread;
 
-    private class ProgressBarFrame extends JFrame implements Runnable {
+    public void show() {
+        _dialog = new ProgressBarDialog();
+        _thread = new Thread(_dialog);
+        _thread.start();
+    }
+
+    public void hide() {
+        _dialog.setVisible(false);
+        WindowEvent closingEvent = new WindowEvent(_dialog, WindowEvent.WINDOW_CLOSING);
+        Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(closingEvent);
+    }
+
+    public void update(String text) {
+        _dialog.setText(text);
+    }
+
+    private class ProgressBarDialog extends JDialog implements Runnable {
         private static final String PATH = "/images/status/loading.gif";
         private static final int MARGIN = 10;
         private static final int FRAME_HEIGHT = 25;
         private final JLabel _label = new JLabel("", JLabel.CENTER);
 
-        private ProgressBarFrame() {
+        private ProgressBarDialog() {
             setUndecorated(true);
             setAlwaysOnTop(true);
-            setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
             final URL imageUrl = getClass().getResource(PATH);
             final ImageIcon image = new ImageIcon(imageUrl);
@@ -37,35 +70,10 @@ public class ProgressBar {
             setVisible(true);
         }
 
-        private void terminate() {
-            setVisible(false);
-            dispose();
-        }
-
         private void setText(String text) {
             _label.setText(text);
             setSize(_label.getPreferredSize().width + 2 * MARGIN, FRAME_HEIGHT + MARGIN);
             setLocationRelativeTo(null);
         }
-    }
-
-    public void show() {
-        _frame = new ProgressBarFrame();
-        _thread = new Thread(_frame);
-        _thread.start();
-    }
-
-    public void hide() {
-        try {
-            _frame.terminate();
-            _thread.interrupt();
-            _thread.join();
-        } catch (InterruptedException e) {
-            logger.error("An error occurred during progress bar hiding. ", e.getMessage());
-        }
-    }
-
-    public void update(String text) {
-        _frame.setText(text);
     }
 }
