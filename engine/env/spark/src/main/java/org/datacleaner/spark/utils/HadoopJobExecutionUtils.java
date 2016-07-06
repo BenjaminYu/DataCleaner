@@ -54,26 +54,28 @@ import org.datacleaner.util.xml.XmlUtils;
 import com.google.common.collect.Iterators;
 
 /**
- * Utility class for creating a job that runs on
- * Hadoop with Spark.
+ * Utility class for creating a job that runs on Hadoop with Spark.
  *
  */
 public class HadoopJobExecutionUtils {
 
     public static boolean isValidSourceDatastore(Datastore datastore) {
+        if (isHdfsResourcedDatastore(datastore)) {
+            if (datastore instanceof CsvDatastore) {
+                final CsvDatastore csvDatastore = (CsvDatastore) datastore;
+                if (!isValidMultilines(csvDatastore) || !isValidEnconding(csvDatastore)) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
 
+    public static boolean isHdfsResourcedDatastore(Datastore datastore) {
         if (datastore instanceof CsvDatastore) {
             final CsvDatastore csvDatastore = (CsvDatastore) datastore;
-            final CsvConfiguration csvConfiguration = csvDatastore.getCsvConfiguration();
-            final String encoding = csvConfiguration.getEncoding();
-            if (!encoding.equals(FileHelper.UTF_8_ENCODING)) {
-                return false;
-            }
-
-            if (csvConfiguration.isMultilineValues()) {
-                return false;
-            }
-
             final Resource resource = csvDatastore.getResource();
             if (!isHdfsResource(resource)) {
                 return false;
@@ -95,6 +97,24 @@ public class HadoopJobExecutionUtils {
             return false;
         }
         return true;
+
+    }
+
+    public static boolean isValidEnconding(CsvDatastore datastore) {
+        final CsvConfiguration csvConfiguration = datastore.getCsvConfiguration();
+        final String encoding = csvConfiguration.getEncoding();
+        if (!encoding.equals(FileHelper.UTF_8_ENCODING)) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean isValidMultilines(CsvDatastore datastore) {
+        final CsvConfiguration csvConfiguration = datastore.getCsvConfiguration();
+        if (csvConfiguration.isMultilineValues()) {
+            return false;
+        }
+        return true;
     }
 
     private static boolean isHdfsResource(Resource resource) {
@@ -111,10 +131,9 @@ public class HadoopJobExecutionUtils {
         }
         return true;
     }
-    
+
     public static File createMinimalConfigurationFile(final DataCleanerConfiguration configuration,
-            final AnalysisJob job)
-            throws IOException {
+            final AnalysisJob job) throws IOException {
         final File temporaryConfigurationFile = File.createTempFile("conf", "xml");
 
         // Use sets to be sure all entries are unique.
@@ -130,8 +149,8 @@ public class HadoopJobExecutionUtils {
         // should also be added to the data stores which are externalized.
         dictionaries.forEach(dictionary -> {
             if (dictionary instanceof DatastoreDictionary) {
-                datastores.add(configuration.getDatastoreCatalog().getDatastore(
-                        ((DatastoreDictionary) dictionary).getDatastoreName()));
+                datastores.add(configuration.getDatastoreCatalog().getDatastore(((DatastoreDictionary) dictionary)
+                        .getDatastoreName()));
             }
         });
 
@@ -151,13 +170,12 @@ public class HadoopJobExecutionUtils {
         datastores.stream().filter(configurationWriter::isExternalizable).forEach(configurationWriter::externalize);
         dictionaries.stream().filter(configurationWriter::isExternalizable).forEach(configurationWriter::externalize);
         stringPatterns.stream().filter(configurationWriter::isExternalizable).forEach(configurationWriter::externalize);
-        synonymCatalogs.stream().filter(configurationWriter::isExternalizable)
-                .forEach(configurationWriter::externalize);
+        synonymCatalogs.stream().filter(configurationWriter::isExternalizable).forEach(
+                configurationWriter::externalize);
 
         addRemoteServersConfiguration(configuration, configurationWriter);
-        
+
         XmlUtils.writeDocument(configurationWriter.getDocument(), new FileOutputStream(temporaryConfigurationFile));
-        
 
         return temporaryConfigurationFile;
     }
@@ -179,30 +197,29 @@ public class HadoopJobExecutionUtils {
             final Set<SynonymCatalog> synonymCatalogs) {
         datastores.add(job.getDatastore());
 
-        
         Iterators.concat(job.getAnalyzerJobs().iterator(), job.getFilterJobs().iterator(), job.getTransformerJobs()
                 .iterator()).forEachRemaining(component -> {
-            component.getDescriptor().getConfiguredProperties().forEach(descriptor -> {
-                final Class<?> type = descriptor.getBaseType();
+                    component.getDescriptor().getConfiguredProperties().forEach(descriptor -> {
+                        final Class<?> type = descriptor.getBaseType();
 
-                if (type == Datastore.class) {
-                    datastores.addAll(getProperties(component, descriptor));
-                } else if (type == Dictionary.class) {
-                    dictionaries.addAll(getProperties(component, descriptor));
-                } else if (type == StringPattern.class) {
-                    stringPatterns.addAll(getProperties(component, descriptor));
-                } else if (type == SynonymCatalog.class) {
-                    synonymCatalogs.addAll(getProperties(component, descriptor));
-                }
-            });
+                        if (type == Datastore.class) {
+                            datastores.addAll(getProperties(component, descriptor));
+                        } else if (type == Dictionary.class) {
+                            dictionaries.addAll(getProperties(component, descriptor));
+                        } else if (type == StringPattern.class) {
+                            stringPatterns.addAll(getProperties(component, descriptor));
+                        } else if (type == SynonymCatalog.class) {
+                            synonymCatalogs.addAll(getProperties(component, descriptor));
+                        }
+                    });
 
-            for (OutputDataStreamJob outputDataStreamJob : component.getOutputDataStreamJobs()) {
-                addJobConfigurations(outputDataStreamJob.getJob(), datastores, dictionaries, stringPatterns,
-                        synonymCatalogs);
-            }
-        });
+                    for (OutputDataStreamJob outputDataStreamJob : component.getOutputDataStreamJobs()) {
+                        addJobConfigurations(outputDataStreamJob.getJob(), datastores, dictionaries, stringPatterns,
+                                synonymCatalogs);
+                    }
+                });
     }
-    
+
     @SuppressWarnings("unchecked")
     private static <T> List<T> getProperties(ComponentJob component, ConfiguredPropertyDescriptor descriptor) {
         if (descriptor.isArray()) {
@@ -211,7 +228,7 @@ public class HadoopJobExecutionUtils {
             return Collections.singletonList((T) component.getConfiguration().getProperty(descriptor));
         }
     }
-    
+
     public static String getUrlReadyJobName(String jobName) {
         return jobName.replace(" ", "%20");
     }
