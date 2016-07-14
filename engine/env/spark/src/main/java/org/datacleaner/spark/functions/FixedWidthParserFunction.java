@@ -20,24 +20,28 @@
 package org.datacleaner.spark.functions;
 
 import org.apache.metamodel.fixedwidth.FixedWidthConfiguration;
-import org.apache.metamodel.fixedwidth.FixedWidthReader;
+import org.apache.metamodel.fixedwidth.FixedWidthLineParser;
 import org.apache.spark.api.java.function.Function;
 
 public class FixedWidthParserFunction implements Function<String, Object[]> {
 
     private static final long serialVersionUID = 1L;
     private final FixedWidthConfiguration _fixedWidthConfiguration;
+    private final FixedWidthLineParser _fixedWidthParser; 
 
     public FixedWidthParserFunction(FixedWidthConfiguration fixedWidthConfiguration) {
         _fixedWidthConfiguration = fixedWidthConfiguration;
+        int expectedLineLength = 0;
+        if (_fixedWidthConfiguration.getFixedValueWidth() == -1) {
+            for (int i = 0; i < _fixedWidthConfiguration.getValueWidths().length; i++) {
+                expectedLineLength += _fixedWidthConfiguration.getValueWidth(i);
+            }
+        }
+        _fixedWidthParser = new FixedWidthLineParser(_fixedWidthConfiguration, expectedLineLength, 0);
     }
 
     @Override
     public Object[] call(String line) throws Exception {
-        @SuppressWarnings("resource")
-        final FixedWidthReader fixedWidthReader = new FixedWidthReader(null, _fixedWidthConfiguration
-                .getValueWidths(), _fixedWidthConfiguration.isFailOnInconsistentLineWidth()); 
-            return fixedWidthReader.readLine(line);
+        return _fixedWidthParser.parseLine(line);
     }
-
 }

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.metamodel.csv.CsvConfiguration;
-import org.apache.metamodel.util.FileResource;
 import org.apache.metamodel.util.Resource;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
