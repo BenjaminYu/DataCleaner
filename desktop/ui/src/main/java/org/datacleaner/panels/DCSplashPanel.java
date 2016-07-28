@@ -56,8 +56,8 @@ public class DCSplashPanel extends DCPanel {
 
     private static final Image BACKGROUND_IMAGE = getBackgroundImage();
 
-    public static final int WIDTH_CONTENT = 800;
-    public static final int MARGIN_LEFT = 20;
+    public static final int WIDTH_CONTENT = 800 * (int)WidgetUtils.SCALLING_FACTOR;
+    public static final int MARGIN_LEFT = 20 * (int)WidgetUtils.SCALLING_FACTOR;
 
     private final AnalysisJobBuilderWindow _window;
 

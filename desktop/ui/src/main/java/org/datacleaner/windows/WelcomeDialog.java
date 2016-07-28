@@ -75,5 +75,6 @@ public class WelcomeDialog extends JDialog {
         setResizable(false);
         WidgetUtils.centerOnScreen(this);
         setModal(true);
-    }
+        pack();
+     }
 }

@@ -30,11 +30,13 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.LayoutManager;
+import java.awt.Toolkit;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.AbstractButton;
 import javax.swing.JComponent;
@@ -44,6 +46,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -72,10 +75,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class WidgetUtils {
-
     private static final Logger logger = LoggerFactory.getLogger(WidgetUtils.class);
 
-    public static final float FONT_SIZE_SMALL = 11f;
+    public static float SCALLING_FACTOR = getScallingFactor();
+
+    public static final float FONT_SIZE_SMALL = 11f * SCALLING_FACTOR;
 
     private static final Map<String, Font> fonts;
 
@@ -87,7 +91,7 @@ public final class WidgetUtils {
     public static final Font FONT_UBUNTU_ITALIC;
     @Deprecated
     public static final Font FONT_UBUNTU_BOLD_ITALIC;
-    
+
     @Deprecated
     public static final Font FONT_OPENSANS_PLAIN;
     @Deprecated
@@ -96,7 +100,7 @@ public final class WidgetUtils {
     public static final Font FONT_OPENSANS_ITALIC;
     @Deprecated
     public static final Font FONT_OPENSANS_BOLD_ITALIC;
-    
+
     private static final Font FONT_MULI_PLAIN;
     private static final Font FONT_MULI_BOLD;
     private static final Font FONT_MULI_LIGHT;
@@ -115,7 +119,7 @@ public final class WidgetUtils {
                 fonts.put(font.getName(), font);
             }
         }
-        
+
         FONT_MULI_PLAIN = createFont("fonts/Muli.ttf");
         FONT_MULI_BOLD = createFont("fonts/Muli-Bold.ttf");
         FONT_MULI_LIGHT = createFont("fonts/Muli-Light.ttf");
@@ -133,20 +137,20 @@ public final class WidgetUtils {
         FONT_OPENSANS_BOLD = FONT_LATO_BOLD;
         FONT_OPENSANS_BOLD_ITALIC = FONT_LATO_BOLD_ITALIC;
 
-        FONT_FONTAWESOME = createFont("fonts/FontAwesome-4.3.0.ttf").deriveFont(14f);
+        FONT_FONTAWESOME = createFont("fonts/FontAwesome-4.3.0.ttf").deriveFont(14f * SCALLING_FACTOR);
 
         fonts.put(FONT_MULI_PLAIN.getName(), FONT_MULI_PLAIN);
     }
 
-    public static final Font FONT_BANNER = FONT_MULI_LIGHT.deriveFont(21f);
-    public static final Font FONT_HEADER1 = FONT_MULI_LIGHT.deriveFont(18f);
+    public static final Font FONT_BANNER = FONT_MULI_LIGHT.deriveFont(21f * SCALLING_FACTOR);
+    public static final Font FONT_HEADER1 = FONT_MULI_LIGHT.deriveFont(18f * SCALLING_FACTOR);
     public static final Font FONT_HEADER2 = FONT_MULI_LIGHT.deriveFont(16f);
-    public static final Font FONT_MONOSPACE = new FontUIResource("Monospaced", Font.PLAIN, 14);
-    public static final Font FONT_BUTTON = FONT_MULI_PLAIN.deriveFont(14f);
-    public static final Font FONT_NORMAL = FONT_MULI_PLAIN.deriveFont(13f);
-    public static final Font FONT_BOLD = FONT_MULI_BOLD.deriveFont(13f);
+    public static final Font FONT_MONOSPACE = new FontUIResource("Monospaced", Font.PLAIN, 14 * (int) SCALLING_FACTOR);
+    public static final Font FONT_BUTTON = FONT_MULI_PLAIN.deriveFont(14f * SCALLING_FACTOR);
+    public static final Font FONT_NORMAL = FONT_MULI_PLAIN.deriveFont(13f * SCALLING_FACTOR);
+    public static final Font FONT_BOLD = FONT_MULI_BOLD.deriveFont(13f * SCALLING_FACTOR);
     public static final Font FONT_SMALL = FONT_MULI_PLAIN.deriveFont(FONT_SIZE_SMALL);
-    public static final Font FONT_TABLE_HEADER = FONT_NORMAL.deriveFont(Font.BOLD);
+    public static final Font FONT_TABLE_HEADER = FONT_NORMAL.deriveFont(Font.BOLD * SCALLING_FACTOR);
 
     public static final int SCROLL_UNIT_INCREMENT = 20;
 
@@ -154,7 +158,7 @@ public final class WidgetUtils {
     public static final Color BG_COLOR_BLUE_MEDIUM = new ColorUIResource(5, 185, 240);
     public static final Color BG_COLOR_BLUE_BRIGHT = slightlyBrighter(BG_COLOR_BLUE_MEDIUM);
     public static final Color BG_COLOR_BLUE_DARK = slightlyDarker(BG_COLOR_BLUE_MEDIUM);
-    
+
     // green base color of DC styling (#70be44)
     public static final Color BG_COLOR_GREEN_MEDIUM = new ColorUIResource(122, 190, 68);
     public static final Color BG_COLOR_GREEN_BRIGHT = slightlyBrighter(BG_COLOR_GREEN_MEDIUM);
@@ -197,7 +201,7 @@ public final class WidgetUtils {
 
     // additional colors, only intended for special widget coloring such as
     // charts etc.
-    
+
     // Green: #70be44
     @Deprecated
     public static final Color ADDITIONAL_COLOR_GREEN_BRIGHT = BG_COLOR_GREEN_MEDIUM;
@@ -215,7 +219,8 @@ public final class WidgetUtils {
 
     public static final Border BORDER_SHADOW = new DropShadowBorder(WidgetUtils.BG_COLOR_DARK, 6);
 
-    public static final Border BORDER_WIDE_ALTERNATIVE = new LineBorder(COLOR_ALTERNATIVE_BACKGROUND, BORDER_WIDE_WIDTH);
+    public static final Border BORDER_WIDE_ALTERNATIVE = new LineBorder(COLOR_ALTERNATIVE_BACKGROUND,
+            BORDER_WIDE_WIDTH);
     public static final Border BORDER_WIDE_DEFAULT = new LineBorder(COLOR_DEFAULT_BACKGROUND, BORDER_WIDE_WIDTH);
     public static final Border BORDER_WIDE_WELL = new LineBorder(COLOR_WELL_BACKGROUND, BORDER_WIDE_WIDTH);
 
@@ -260,9 +265,8 @@ public final class WidgetUtils {
     public static final Border BORDER_BUTTON_DARK_WITH_LINE = new CompoundBorder(new LineBorder(BG_COLOR_LESS_DARK, 1,
             false), new EmptyBorder(BORDER_WIDE_WIDTH - 1, 9, BORDER_WIDE_WIDTH - 1, 9));
 
-    public static final Border BORDER_BUTTON_DEFAULT = new CompoundBorder(
-            new LineBorder(BG_COLOR_LESS_BRIGHT, 1, false), new EmptyBorder(BORDER_WIDE_WIDTH - 1, 9,
-                    BORDER_WIDE_WIDTH - 1, 9));
+    public static final Border BORDER_BUTTON_DEFAULT = new CompoundBorder(new LineBorder(BG_COLOR_LESS_BRIGHT, 1,
+            false), new EmptyBorder(BORDER_WIDE_WIDTH - 1, 9, BORDER_WIDE_WIDTH - 1, 9));
     public static final Border BORDER_BUTTON_PRIMARY = new EmptyBorder(BORDER_WIDE_WIDTH, 10, BORDER_WIDE_WIDTH, 10);
 
     public static final Object BORDER_MENU_ITEM = new EmptyBorder(2, 2, 2, 2);
@@ -270,8 +274,8 @@ public final class WidgetUtils {
     /**
      * A highlighter for coloring odd/even rows in a table
      */
-    public static final Highlighter LIBERELLO_HIGHLIGHTER = HighlighterFactory.createAlternateStriping(
-            colorBetween(BG_COLOR_BRIGHTEST, BG_COLOR_BRIGHT), BG_COLOR_BRIGHTEST);
+    public static final Highlighter LIBERELLO_HIGHLIGHTER = HighlighterFactory.createAlternateStriping(colorBetween(
+            BG_COLOR_BRIGHTEST, BG_COLOR_BRIGHT), BG_COLOR_BRIGHTEST);
 
     /**
      * Slightly moderated version of COLOR.FACTOR
@@ -279,7 +283,7 @@ public final class WidgetUtils {
     private static final double COLOR_SCALE_FACTOR = 0.9;
 
     // grid bag contraint defaults
-    public static final int DEFAULT_PADDING = 2;
+    public static final int DEFAULT_PADDING = 2 * (int)SCALLING_FACTOR;
     public static final int DEFAULT_ANCHOR = GridBagConstraints.WEST;
 
     /**
@@ -427,7 +431,8 @@ public final class WidgetUtils {
         addToGridBag(comp, panel, gridx, gridy, 1, 1);
     }
 
-    public static void addToGridBag(Component comp, JPanel panel, int gridx, int gridy, double weightx, double weighty) {
+    public static void addToGridBag(Component comp, JPanel panel, int gridx, int gridy, double weightx,
+            double weighty) {
         addToGridBag(comp, panel, gridx, gridy, 1, 1, DEFAULT_ANCHOR, DEFAULT_PADDING, weightx, weighty);
     }
 
@@ -470,8 +475,8 @@ public final class WidgetUtils {
         final String finalDetailedMessage = detailedMessage == null ? "" : detailedMessage;
         final String finalShortMessage = shortMessage == null ? "" : shortMessage;
 
-        final ErrorInfo info = new ErrorInfo(finalShortMessage, finalDetailedMessage, null, "error",
-                presentedException, ErrorLevel.SEVERE, null);
+        final ErrorInfo info = new ErrorInfo(finalShortMessage, finalDetailedMessage, null, "error", presentedException,
+                ErrorLevel.SEVERE, null);
         final JXErrorPane errorPane = new JXErrorPane();
         errorPane.setErrorInfo(info);
 
@@ -484,6 +489,7 @@ public final class WidgetUtils {
         dialog.setTitle(finalShortMessage);
         dialog.setVisible(true);
         dialog.toFront();
+        dialog.pack();
     }
 
     public static void showErrorMessage(final String shortMessage, final Throwable exception) {
@@ -535,9 +541,8 @@ public final class WidgetUtils {
      * @return
      */
     public static Color slightlyDarker(Color color) {
-        return new Color(Math.max((int) (color.getRed() * COLOR_SCALE_FACTOR), 0), Math.max(
-                (int) (color.getGreen() * COLOR_SCALE_FACTOR), 0), Math.max(
-                (int) (color.getBlue() * COLOR_SCALE_FACTOR), 0));
+        return new Color(Math.max((int) (color.getRed() * COLOR_SCALE_FACTOR), 0), Math.max((int) (color.getGreen()
+                * COLOR_SCALE_FACTOR), 0), Math.max((int) (color.getBlue() * COLOR_SCALE_FACTOR), 0));
     }
 
     /**
@@ -670,8 +675,8 @@ public final class WidgetUtils {
         Font font = label.getFont();
         int canDisplay = font.canDisplayUpTo(text);
         if (canDisplay != -1) {
-            logger.warn("Default font ('{}') was unable to display text ('{}'), searching for alternative.",
-                    font.getName(), text);
+            logger.warn("Default font ('{}') was unable to display text ('{}'), searching for alternative.", font
+                    .getName(), text);
 
             // if the label contains undisplayable characters, look for a
             // different font able of displaying the characters.
@@ -700,4 +705,21 @@ public final class WidgetUtils {
         }
     }
 
+    public static float getScallingFactor() {
+
+        final double resolutionScale = Toolkit.getDefaultToolkit().getScreenResolution();
+        
+        logger.info("The resolution is:" + resolutionScale);
+
+        if (resolutionScale < 150) {
+            return 1;
+        } else if (resolutionScale < 200) {
+            return 2;
+        } else if (resolutionScale < 300) {
+            return (float) 2.5;
+        } else {
+            return 3;
+        }
+       
+    }
 }
