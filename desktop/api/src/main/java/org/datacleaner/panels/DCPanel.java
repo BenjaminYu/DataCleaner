@@ -34,6 +34,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
+import org.datacleaner.util.WidgetUtils;
 import org.datacleaner.widgets.Alignment;
 
 /**
@@ -208,4 +209,11 @@ public class DCPanel extends JPanel {
         setBorder(new TitledBorder(title));
         return this;
     }
+    
+//    @Override
+//    public void paint(Graphics g) {
+//        final Graphics2D graphics2d = (Graphics2D) g;
+//        graphics2d.scale(WidgetUtils.getXScallingFactor(), WidgetUtils.getYScallingFactor());
+//        super.paint(g);
+//    }
 }

@@ -30,6 +30,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.LayoutManager;
+import java.awt.Toolkit;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
@@ -700,4 +701,31 @@ public final class WidgetUtils {
         }
     }
 
+    public static double getXScallingFactor(){
+        int screenResolution = Toolkit.getDefaultToolkit().getScreenResolution();
+        if (screenResolution < 150) {
+            return 2;
+        } else if (screenResolution < 200) {
+            return 1.5;
+        } else if (screenResolution < 300) {
+            return 2;
+        } else {
+            return 2.5;
+        }
+        
+    }
+    
+    public static double getYScallingFactor(){
+        int screenResolution = Toolkit.getDefaultToolkit().getScreenResolution();
+        if (screenResolution < 150) {
+            return 2;
+        } else if (screenResolution < 200) {
+            return 1.5;
+        } else if (screenResolution < 300) {
+            return 2;
+        } else {
+            return 2.5;
+        }
+        
+    }
 }

@@ -22,11 +22,17 @@ package org.datacleaner.windows;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Cursor;
+import java.awt.Event;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -37,6 +43,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.*;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.border.EmptyBorder;
 
 import org.apache.commons.vfs2.FileObject;
@@ -960,5 +967,12 @@ public final class AnalysisJobBuilderWindowImpl extends AbstractWindow implement
     @Override
     public DCModule getDCModule() {
         return _dcModule;
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        final Graphics2D graphics2d = (Graphics2D) g;
+        graphics2d.scale(WidgetUtils.getXScallingFactor(), WidgetUtils.getYScallingFactor());
+        super.paint(g);
     }
 }

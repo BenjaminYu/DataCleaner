@@ -21,6 +21,8 @@ package org.datacleaner.panels;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
@@ -249,5 +251,11 @@ public class SchemaTreePanel extends DCPanel {
 
     public void setUpdatePanel(JComponent updatePanel) {
         _updatePanel = updatePanel;
+    }
+    @Override
+    public void paint(Graphics g) {
+        final Graphics2D graphics2d = (Graphics2D) g;
+        graphics2d.scale(2, 2);
+        super.paint(g);
     }
 }
