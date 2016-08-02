@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.datacleaner.bootstrap.Bootstrap;
@@ -35,13 +38,21 @@ import org.datacleaner.bootstrap.DefaultBootstrapOptions;
 import org.datacleaner.extensions.ClassLoaderUtils;
 import org.datacleaner.user.DataCleanerHome;
 
+import javafx.application.Application;
+import javafx.embed.swing.SwingNode;
+import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+
 /**
  * The main executable class of DataCleaner. This class primarily sets up
  * logging, system properties and delegates to the {@link Bootstrap} class for
  * actual application startup.
  */
-public final class Main {
+public final class Main extends Application {
 
+     private static Bootstrap _bootstrap; 
+    
     public static void main(String[] args) {
         main(args, true, true);
     }
@@ -55,9 +66,7 @@ public final class Main {
             initializeLogging();
         }
 
-        final BootstrapOptions bootstrapOptions = new DefaultBootstrapOptions(args);
-        final Bootstrap bootstrap = new Bootstrap(bootstrapOptions);
-        bootstrap.run();
+        launch(args); 
     }
 
     /**
@@ -162,5 +171,35 @@ public final class Main {
      */
     private static void println(String string) {
         System.out.println(string);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        // TODO Auto-generated method stub
+        final SwingNode swingNode = new SwingNode();
+
+        createSwingContent(swingNode);
+
+        StackPane pane = new StackPane();
+        pane.getChildren().add(swingNode);
+
+        primaryStage.setTitle("Swing in JavaFX");
+        primaryStage.setScene(new Scene(pane, 250, 150));
+        primaryStage.show();
+    }
+
+    private void createSwingContent(SwingNode swingNode) {
+        // TODO Auto-generated method stub
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Running in FX mode");
+                final BootstrapOptions bootstrapOptions = new DefaultBootstrapOptions(null);
+                _bootstrap = new Bootstrap(bootstrapOptions);
+                _bootstrap.run();
+                JComponent analysisJobBuilderWindow =  (JComponent) _bootstrap.getAnalysisJobBuilderWindow();
+                swingNode.setContent(analysisJobBuilderWindow);
+            }
+        });
     }
 }

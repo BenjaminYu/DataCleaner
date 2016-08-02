@@ -89,6 +89,7 @@ public final class Bootstrap {
     private static final Logger logger = LoggerFactory.getLogger(Bootstrap.class);
 
     private final BootstrapOptions _options;
+    private AnalysisJobBuilderWindow _analysisJobBuilderWindow; 
 
     public Bootstrap(BootstrapOptions options) {
         if (options == null) {
@@ -269,6 +270,7 @@ public final class Bootstrap {
             if (exitActionListener != null) {
                 windowContext.addExitActionListener(exitActionListener);
             }
+            setAnalysisJobBuilderWindow(analysisJobBuilderWindow);
         }
     }
 
@@ -475,5 +477,12 @@ public final class Bootstrap {
                 }
             });
         }
+    }
+    public void setAnalysisJobBuilderWindow(AnalysisJobBuilderWindow _analysisJobBuilderWindow) {
+        _analysisJobBuilderWindow = _analysisJobBuilderWindow;
+    }
+    
+    public AnalysisJobBuilderWindow getAnalysisJobBuilderWindow() {
+        return _analysisJobBuilderWindow;
     }
 }
