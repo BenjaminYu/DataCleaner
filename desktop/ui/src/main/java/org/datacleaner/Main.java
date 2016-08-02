@@ -50,11 +50,12 @@ public final class Main {
         if (initializeSystemProperties) {
             initializeSystemProperties(args);
         }
-
+         
         if (initializeLogging) {
             initializeLogging();
         }
 
+        System.setProperty("-Dsun.java2d.dpiaware ", "true");
         final BootstrapOptions bootstrapOptions = new DefaultBootstrapOptions(args);
         final Bootstrap bootstrap = new Bootstrap(bootstrapOptions);
         bootstrap.run();

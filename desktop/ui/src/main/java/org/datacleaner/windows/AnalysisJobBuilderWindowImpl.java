@@ -971,8 +971,15 @@ public final class AnalysisJobBuilderWindowImpl extends AbstractWindow implement
 
     @Override
     public void paint(Graphics g) {
-        final Graphics2D graphics2d = (Graphics2D) g;
-        graphics2d.scale(WidgetUtils.getXScallingFactor(), WidgetUtils.getYScallingFactor());
-        super.paint(g);
+//        final Graphics2D graphics2d = (Graphics2D) g;
+//        AffineTransform scaleInstance = AffineTransform.getScaleInstance(3, 3);
+//        scaleInstance.translate(0, 0);
+//        AffineTransform defaulttTransform = graphics2d.getTransform();
+//		defaulttTransform.concatenate(scaleInstance);
+//       //
+//		graphics2d.setTransform(defaulttTransform);
+       super.paint(g);
+//        repaint();
+//        revalidate();
     }
 }
