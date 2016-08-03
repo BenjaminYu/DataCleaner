@@ -429,7 +429,7 @@ public class DomConfigurationWriterTest {
         
         final Element externalized2 = configurationWriter.externalize(fixedWidthDatastore2);
         final String str2 = transform(externalized2);
-        assertEquals("<fixed-width-datastore description=\"bar\" name=\"my fixed width ds\">\n" + 
+        assertEquals("<fixed-width-datastore description=\"bar\" name=\"my fixed width ds 2\">\n" + 
                 "  <filename>C:\\test.csv</filename>\n" + 
                 "  <encoding>UTF-8</encoding>\n" + 
                 "  <width-specification>\n" + 
