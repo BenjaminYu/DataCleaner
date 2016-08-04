@@ -1234,9 +1234,8 @@ public final class JaxbConfigurationReader implements ConfigurationReader<InputS
     }
 
     private Datastore createDatastore(String name, FixedWidthDatastoreType fixedWidthDatastore, DataCleanerConfiguration configuration) {
-        @SuppressWarnings("deprecation")
-        final String filename = _interceptor.createFilename(getStringVariable("filename", fixedWidthDatastore
-                .getFilename()));
+        final String filename = getStringVariable("filename", fixedWidthDatastore
+                .getFilename());
         final Resource resource = _interceptor.createResource(filename, configuration);
         String encoding = getStringVariable("encoding", fixedWidthDatastore.getEncoding());
         if (!StringUtils.isNullOrEmpty(encoding)) {
